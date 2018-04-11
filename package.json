@@ -1,0 +1,13 @@
+{
+  "name": "dat-browser-bridge",
+  "version": "0.0.1",
+  "description": "Bridge to Dat for a browser extension",
+  "main": "index.js",
+  "scripts": {},
+  "author": "Sam Macbeth",
+  "license": "MIT",
+  "dependencies": {
+    "dat-gateway": "git+https://git@github.com/sammacbeth/dat-gateway.git",
+    "node-dat-archive": "^2.0.1"
+  }
+}
