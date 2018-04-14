@@ -3,11 +3,16 @@
   "version": "0.0.1",
   "description": "Bridge to Dat for a browser extension",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "package": "pkg index.js --out-path dist/"
+  },
   "author": "Sam Macbeth",
   "license": "MIT",
   "dependencies": {
     "dat-gateway": "git+https://git@github.com/sammacbeth/dat-gateway.git",
     "node-dat-archive": "^2.0.1"
+  },
+  "devDependencies": {
+    "pkg": "^4.3.1"
   }
 }
