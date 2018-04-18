@@ -1,7 +1,0 @@
-{
-    "name": "datbridge",
-    "description": "Dat protocol bridge",
-    "path": "/path/to/dat-browser-bridge/index.js",
-    "type": "stdio",
-    "allowed_extensions": [ "dat-fox@sammacbeth.eu" ]
-  }

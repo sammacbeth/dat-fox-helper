@@ -1,0 +1,7 @@
+{
+    "name": "dathelper",
+    "description": "Dat helper daemon",
+    "path": "/path/to/dat-fox-helper/index.js",
+    "type": "stdio",
+    "allowed_extensions": [ "dat-fox@sammacbeth.eu" ]
+  }
