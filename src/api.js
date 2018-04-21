@@ -1,20 +1,9 @@
-const DatGateway = require('dat-gateway');
 const DatArchive = require('node-dat-archive')
 const library = require('./library');
 const getArchive = library.getArchive;
 
-const gateway = new DatGateway({
-    dir: '.dat-gateway',
-    max: 20,
-    maxAge:  10 * 60 * 1000,
-});
-
 module.exports = {
-    supportedActions: () => Promise.resolve(Object.keys(handlers)),
     apiVersion: () => Promise.resolve(1),
-    startGateway: ({ port=3000 }) => {
-        return gateway.listen(port);
-    },
     // DatArchive static methods
     resolveName: (message) => DatArchive.resolveName(message.name),
     // DatArchive class methods

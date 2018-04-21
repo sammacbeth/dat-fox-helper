@@ -1,6 +1,13 @@
 #!/home/sam/.nvm/versions/node/v9.9.0/bin/node
 const browser = require('./src/browser');
-const handlers = require('./src/api');
+const datApi = require('./src/api');
+const gateway = require('./src/gateway');
+
+const handlers = {
+    supportedActions: () => Promise.resolve(Object.keys(handlers)),
+};
+// collect available APIs
+Object.assign(handlers, datApi, gateway);
 
 // make API available over native messaging via stdio
 browser.onMessage.addListener((message) => {
