@@ -1,10 +1,10 @@
 {
-  "name": "dat-browser-bridge",
+  "name": "dat-fox-helper",
   "version": "0.0.1",
   "description": "Bridge to Dat for a browser extension",
   "main": "index.js",
   "scripts": {
-    "package": "pkg datfox-helper.js --out-path dist/"
+    "package": "pkg datfox-helper.js -c package.json --out-path dist/"
   },
   "author": "Sam Macbeth",
   "license": "MIT",
