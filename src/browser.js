@@ -1,3 +1,5 @@
+const process = require('process');
+
 // Implementation of the extension native messaging protocol over stdio
 let expected = null;
 const empty = Buffer.alloc(0)

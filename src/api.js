@@ -1,10 +1,7 @@
-#!/usr/bin/env node
-
-const process = require('process')
-const fs = require('fs');
 const DatGateway = require('dat-gateway');
-const browser = require('./browser');
 const DatArchive = require('node-dat-archive')
+const library = require('./library');
+const getArchive = library.getArchive;
 
 const gateway = new DatGateway({
     dir: '.dat-gateway',
@@ -12,26 +9,7 @@ const gateway = new DatGateway({
     maxAge:  10 * 60 * 1000,
 });
 
-const libraryDir = './library';
-if (!fs.existsSync(libraryDir)) {
-    fs.mkdirSync(libraryDir);
-}
-const library = new Map();
-
-function getArchive(url) {
-    if (!library.has(url)) {
-        const path = url.replace('dat://', '');
-        library.set(url, new DatArchive(url,  {
-            localPath: `${libraryDir}/${path}`,
-            datOptions: {
-                latest: true,
-            }
-        }));
-    }
-    return library.get(url);
-}
-
-const handlers = {
+module.exports = {
     supportedActions: () => Promise.resolve(Object.keys(handlers)),
     apiVersion: () => Promise.resolve(1),
     startGateway: ({ port=3000 }) => {
@@ -53,30 +31,4 @@ const handlers = {
     commit: ({ url }) => getArchive(url).commit(),
     revert: ({ url }) => getArchive(url).revert(),
     download: ({ url, path, opts }) => getArchive(url).download(path, opts),
-}
-
-browser.onMessage.addListener((message) => {
-    const { id, action } = message;
-    if (handlers[action]) {
-        handlers[action](message).then((result) => {
-            browser.postMessage({
-                id,
-                action,
-                result,
-            });
-        }, (error) => {
-            browser.postMessage({
-                id,
-                action,
-                error: error,
-            });
-        });
-    } else {
-        browser.postMessage({
-            id,
-            action,
-            error: 'unhandled_message',
-            message,
-        });
-    }
-});
+};

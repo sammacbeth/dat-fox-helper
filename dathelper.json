@@ -1,7 +1,10 @@
 {
     "name": "dathelper",
     "description": "Dat helper daemon",
-    "path": "/path/to/dat-fox-helper/index.js",
+    "path": "/path/to/dat-fox-helper/datfox-helper.js",
     "type": "stdio",
-    "allowed_extensions": [ "dat-fox@sammacbeth.eu" ]
+    "allowed_extensions": [
+      "{e992d888-6346-4e09-98b5-8c61307970e6}",
+      "{acc91f3f-2194-4f88-b25a-84ec4ea65683}"
+    ]
   }
