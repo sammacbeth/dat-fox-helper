@@ -1,6 +1,6 @@
 {
   "name": "dat-fox-helper",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Bridge to Dat for a browser extension",
   "main": "index.js",
   "scripts": {
@@ -10,7 +10,8 @@
   "license": "MIT",
   "dependencies": {
     "dat-gateway": "git+https://git@github.com/sammacbeth/dat-gateway.git",
-    "node-dat-archive": "^2.0.1"
+    "node-dat-archive": "^2.0.1",
+    "node-persist": "^3.0.0"
   },
   "devDependencies": {
     "pkg": "^4.3.1"
