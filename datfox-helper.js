@@ -23,7 +23,7 @@ browser.onMessage.addListener((message) => {
             browser.postMessage({
                 id,
                 action,
-                error,
+                error: error.toString(),
             });
         });
     } else {

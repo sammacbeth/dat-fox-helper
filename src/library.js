@@ -3,9 +3,9 @@ const path = require('path');
 const DatArchive = require('node-dat-archive')
 const parseDatURL = require('parse-dat-url')
 const storage = require('node-persist');
-const pda = require('pauls-dat-api')
+const pda = require('pauls-dat-api');
 
-const libraryDir = path.join(__dirname, 'library');
+const libraryDir = path.join(__dirname, '../library');
 // open and active archives
 const archives = new Map();
 
@@ -57,7 +57,7 @@ async function createArchive(opts) {
     if (fs.existsSync(dir)) {
         let i = 1;
         const dirN = (n) => `${dir}_${n}`;
-        while (fs.exists(dirN(i))) {
+        while (fs.existsSync(dirN(i))) {
             i += 1;
         }
         dir = dirN(i);
@@ -75,7 +75,7 @@ async function createArchive(opts) {
     const { host } = parseDatURL(archive.url);
     storage.setItem(archive.url, { dir, url: archive.url, owner: true, description });
     archives.set(host, archive);
-    return archive;
+    return archive.url;
 }
 
 const DAT_PRESERVED_FIELDS_ON_FORK = [
@@ -90,7 +90,7 @@ async function forkArchive(srcArchiveUrl, opts) {
     // get source archive and download the contents
     const { host } = parseDatURL(srcArchiveUrl);
     const srcArchive = getArchive(host);
-    await srcArchive.download('/');
+    await srcArchive.download('/', { timeout: 60000 });
 
     // get manifest of the source archive
     const srcManifest = await pda.readManifest(srcArchive._archive).catch(_ => {});
@@ -105,7 +105,8 @@ async function forkArchive(srcArchiveUrl, opts) {
             dstManifest[field] = srcManifest[field]
         }
     });
-    const dstArchive = await createArchive(dstManifest);
+    const dstArchiveUrl = await createArchive(dstManifest);
+    const dstArchive = getArchive(dstArchiveUrl);
     await pda.updateManifest(dstArchive._archive, dstManifest);
     await pda.exportArchiveToArchive({
         srcArchive: srcArchive._archive,
@@ -113,7 +114,7 @@ async function forkArchive(srcArchiveUrl, opts) {
         skipUndownloadedFiles: true,
         ignore: ['/.dat', '/.git', '/dat.json'],
     });
-    return dstArchive;
+    return dstArchive.url;
 }
 
 module.exports = {
