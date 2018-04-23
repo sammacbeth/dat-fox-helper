@@ -1,11 +1,12 @@
 const fs = require('fs');
+const process = require('process');
 const path = require('path');
 const DatArchive = require('node-dat-archive')
 const parseDatURL = require('parse-dat-url')
 const storage = require('node-persist');
 const pda = require('pauls-dat-api');
 
-const libraryDir = path.join(__dirname, '../library');
+const libraryDir = path.join(process.cwd(), 'library');
 // open and active archives
 const archives = new Map();
 

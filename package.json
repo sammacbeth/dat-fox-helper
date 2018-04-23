@@ -11,7 +11,8 @@
   "dependencies": {
     "dat-gateway": "git+https://git@github.com/sammacbeth/dat-gateway.git",
     "node-dat-archive": "^2.0.1",
-    "node-persist": "^3.0.0"
+    "node-persist": "^3.0.0",
+    "pauls-dat-api": "7.2.0"
   },
   "devDependencies": {
     "pkg": "^4.3.1"
