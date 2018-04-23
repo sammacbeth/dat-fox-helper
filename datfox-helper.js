@@ -2,9 +2,11 @@
 const browser = require('./src/browser');
 const datApi = require('./src/api');
 const gateway = require('./src/gateway');
+const version = require('./package.json').version;
 
 const handlers = {
     supportedActions: () => Promise.resolve(Object.keys(handlers)),
+    getVersion: () => Promise.resolve(version),
 };
 // collect available APIs
 Object.assign(handlers, datApi, gateway);
