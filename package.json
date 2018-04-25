@@ -9,10 +9,11 @@
   "author": "Sam Macbeth",
   "license": "MIT",
   "dependencies": {
-    "dat-gateway": "git+https://git@github.com/sammacbeth/dat-gateway.git",
     "node-dat-archive": "^2.0.1",
     "node-persist": "^3.0.0",
-    "pauls-dat-api": "7.2.0"
+    "pauls-dat-api": "7.2.1",
+    "mime": "2.3.1",
+    "pump": "3.0.0"
   },
   "devDependencies": {
     "pkg": "^4.3.1"
