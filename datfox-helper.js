@@ -1,15 +1,31 @@
 #!/home/sam/.nvm/versions/node/v9.9.0/bin/node
+const path = require('path');
 const browser = require('./src/browser');
 const datApi = require('./src/api');
-const gateway = require('./src/gateway');
+const DatGateway = require('./src/gateway');
+const Library = require('./src/library');
 const version = require('./package.json').version;
+
+const libraryDir = path.join(process.cwd(), 'library');
+const library = new Library(libraryDir);
+library.init();
+const gateway = new DatGateway(library);
 
 const handlers = {
     supportedActions: () => Promise.resolve(Object.keys(handlers)),
     getVersion: () => Promise.resolve(version),
+    listLibrary: () => library.listLibrary(),
 };
 // collect available APIs
-Object.assign(handlers, datApi, gateway);
+Object.assign(handlers, datApi({
+    getArchive: library.getArchive.bind(library),
+    createArchive: library.createArchive.bind(library),
+    forkArchive: library.forkArchive.bind(library),
+}), {
+    startGateway: ({ port=3000 }) => {
+        return gateway.listen(port);
+    },
+});
 
 // make API available over native messaging via stdio
 browser.onMessage.addListener((message) => {
