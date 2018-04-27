@@ -1,7 +1,6 @@
 const DatArchive = require('node-dat-archive')
-const { getArchive, createArchive, forkArchive, listLibrary } = require('./library');
 
-module.exports = {
+module.exports = ({ getArchive, createArchive, forkArchive }) => ({
     apiVersion: () => Promise.resolve(1),
     // DatArchive static methods
     resolveName: (message) => DatArchive.resolveName(message.name),
@@ -21,6 +20,4 @@ module.exports = {
     commit: ({ url }) => getArchive(url).commit(),
     revert: ({ url }) => getArchive(url).revert(),
     download: ({ url, path, opts }) => getArchive(url).download(path, opts),
-    // library management
-    listLibrary,
-};
+});

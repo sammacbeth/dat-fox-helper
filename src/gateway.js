@@ -5,10 +5,9 @@ const pump = require('pump')
 const parseDatURL = require('parse-dat-url');
 const pda = require('pauls-dat-api');
 
-const library = require('./library');
-
 class DatGateway {
-    constructor() {
+    constructor(library) {
+        this.library = library;
         this.server = http.createServer(async (req, res) => {
             try {
                 await this.handleRequest(req, res);
@@ -47,7 +46,7 @@ class DatGateway {
             errorResponse(405, 'Method Not Supported');
             return;
         }
-        const archive = library.getArchive(`dat://${host}`);
+        const archive = this.library.getArchive(`dat://${host}`);
         const filePath = decodeURIComponent(path).split('?')[0] || '/';
         const isFolder = filePath.endsWith('/');
 
@@ -133,10 +132,4 @@ class DatGateway {
     }
 }
 
-const gateway = new DatGateway();
-
-module.exports = {
-    startGateway: ({ port=3000 }) => {
-        return gateway.listen(port);
-    },
-}
+module.exports = DatGateway;
