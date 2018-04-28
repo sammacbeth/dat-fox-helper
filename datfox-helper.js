@@ -15,6 +15,9 @@ const handlers = {
     supportedActions: () => Promise.resolve(Object.keys(handlers)),
     getVersion: () => Promise.resolve(version),
     listLibrary: () => library.listLibrary(),
+    getOpenArchives: () => Promise.resolve(library.getOpenArchives()),
+    removeFromLibrary: ({ url }) => library.remove(url),
+    closeArchive: ({ url }) => library.close(url),
 };
 // collect available APIs
 Object.assign(handlers, datApi({
