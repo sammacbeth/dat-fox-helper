@@ -21,6 +21,7 @@ class Library {
         this.libraryDir = libraryDir;
         // open and active archives
         this.archives = new Map();
+        this.archiveUsage = new Map();
     }
 
     async init() {
@@ -51,11 +52,41 @@ class Library {
         return storage.values();
     }
 
+    async remove(url) {
+        // remove from library
+        await this.ready;
+        const archiveInfo = await storage.getItem(url);
+        if (!archiveInfo) {
+            throw new Error('Archive not in library');
+        }
+        // close archive
+        await this.close(url);
+        await storage.removeItem(url);
+        return archiveInfo;
+    }
+
+    async close(url) {
+        const { host } = parseDatURL(url);
+        const archive = this.getArchive(url);
+        this.archives.delete(host);
+        this.archiveUsage.delete(host);
+        await archive._close();
+    }
+
+    getOpenArchives() {
+        return [...this.archives.entries()].map(([host, archive]) => ({
+            host,
+            url: archive.url,
+            lastUsed: this.archiveUsage.get(host),
+        }));
+    }
+
     getArchive(url) {
         const { host } = parseDatURL(url);
         if (!this.archives.has(host)) {
             this.archives.set(host, new DatArchive(url));
         }
+        this.archiveUsage.set(host, Date.now());
         return this.archives.get(host);
     }
 
