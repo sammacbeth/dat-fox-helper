@@ -24,7 +24,7 @@ function processData(data) {
         try {
             fn(message);
         } catch(e) {
-            postMessage({ type: 'native_exception', error: e });
+            postMessage({ type: 'native_exception', error: e.toString() });
         }
     });
     buffer = buffer.length === expected ? empty : Buffer.from(buffer.slice(expected));
