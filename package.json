@@ -1,6 +1,6 @@
 {
   "name": "dat-fox-helper",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Bridge to Dat for a browser extension",
   "main": "index.js",
   "scripts": {
