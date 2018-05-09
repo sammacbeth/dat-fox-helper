@@ -139,7 +139,7 @@ class Library {
                 dstManifest[field] = srcManifest[field]
             }
         });
-        const dstArchiveUrl = await createArchive(dstManifest);
+        const dstArchiveUrl = await this.createArchive(dstManifest);
         const dstArchive = this.getArchive(dstArchiveUrl);
         await pda.updateManifest(dstArchive._archive, dstManifest);
         await pda.exportArchiveToArchive({
