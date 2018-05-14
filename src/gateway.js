@@ -4,6 +4,7 @@ const joinPaths = require('path').join;
 const pump = require('pump')
 const parseDatURL = require('parse-dat-url');
 const pda = require('pauls-dat-api');
+const DatArchive = require('node-dat-archive')
 
 class DatGateway {
     constructor(library) {
@@ -37,8 +38,9 @@ class DatGateway {
         }
 
         const { host, path, version, search } = parseDatURL(req.url);
+        const address = await DatArchive.resolveName(host);
 
-        if (!host) {
+        if (!address) {
             errorResponse(404, 'Archive Not Found');
             return;
         }
@@ -46,7 +48,7 @@ class DatGateway {
             errorResponse(405, 'Method Not Supported');
             return;
         }
-        const archive = this.library.getArchive(`dat://${host}`);
+        const archive = await this.library.getArchive(`dat://${address}`);
         const filePath = decodeURIComponent(path).split('?')[0] || '/';
         const isFolder = filePath.endsWith('/');
 

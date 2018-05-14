@@ -67,7 +67,7 @@ class Library {
 
     async close(url) {
         const { host } = parseDatURL(url);
-        const archive = this.getArchive(url);
+        const archive = await this.getArchive(url);
         this.archives.delete(host);
         this.archiveUsage.delete(host);
         await archive._close();
@@ -81,8 +81,8 @@ class Library {
         }));
     }
 
-    getArchive(url) {
-        const { host } = parseDatURL(url);
+    async getArchive(url) {
+        const host = await DatArchive.resolveName(url);
         if (!this.archives.has(host)) {
             this.archives.set(host, new DatArchive(url));
         }
@@ -123,7 +123,7 @@ class Library {
 
         // get source archive and download the contents
         const { host } = parseDatURL(srcArchiveUrl);
-        const srcArchive = this.getArchive(host);
+        const srcArchive = await this.getArchive(host);
         await srcArchive.download('/', { timeout: 60000 });
 
         // get manifest of the source archive
@@ -140,7 +140,7 @@ class Library {
             }
         });
         const dstArchiveUrl = await this.createArchive(dstManifest);
-        const dstArchive = this.getArchive(dstArchiveUrl);
+        const dstArchive = await this.getArchive(dstArchiveUrl);
         await pda.updateManifest(dstArchive._archive, dstManifest);
         await pda.exportArchiveToArchive({
             srcArchive: srcArchive._archive,

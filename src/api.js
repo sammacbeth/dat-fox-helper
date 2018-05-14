@@ -73,11 +73,11 @@ module.exports = ({ getArchive, createArchive, forkArchive }) => ({
     create: ({ opts }) => createArchive(opts),
     fork: ({ url, opts }) => forkArchive(url, opts),
     // DatArchive class methods
-    getInfo: (message) => getArchive(message.url).getInfo(message.opts),
-    stat: (message) => getArchive(message.url)
+    getInfo: async (message) => (await getArchive(message.url)).getInfo(message.opts),
+    stat: async (message) => (await getArchive(message.url))
         .stat(message.path, message.opts)
         .then(s => seralisableStat(s)),
-    readdir: ({ url, path, opts }) => getArchive(url)
+    readdir: async ({ url, path, opts }) => (await getArchive(url))
         .readdir(path, opts)
         .then((dir) => {
             if (opts && opts.stat) {
@@ -85,18 +85,18 @@ module.exports = ({ getArchive, createArchive, forkArchive }) => ({
             }
             return dir;
         }),
-    history: (message) => getArchive(message.url).history(message.opts),
-    readFile: ({ url, path, opts }) => getArchive(url).readFile(path, opts),
-    writeFile: ({ url, path, data, opts }) => getArchive(url).writeFile(path, data, opts),
-    mkdir: ({ url, path }) => getArchive(url).mkdir(path),
-    unlink: ({ url, path }) => getArchive(url).unlink(path),
-    rmdir: ({ url, path, opts }) => getArchive(url).rmdir(path, opts),
-    diff: ({ url, opts }) => getArchive(url).diff(opts),
-    commit: ({ url }) => getArchive(url).commit(),
-    revert: ({ url }) => getArchive(url).revert(),
-    download: ({ url, path, opts }) => getArchive(url).download(path, opts),
+    history: async (message) =>  (await getArchive(message.url)).history(message.opts),
+    readFile: async ({ url, path, opts }) => (await getArchive(url)).readFile(path, opts),
+    writeFile: async ({ url, path, data, opts }) => (await getArchive(url)).writeFile(path, data, opts),
+    mkdir: async ({ url, path }) => (await getArchive(url)).mkdir(path),
+    unlink: async ({ url, path }) => (await getArchive(url)).unlink(path),
+    rmdir: async ({ url, path, opts }) => (await getArchive(url)).rmdir(path, opts),
+    diff: async ({ url, opts }) =>(await getArchive(url)).diff(opts),
+    commit: async ({ url }) => (await getArchive(url)).commit(),
+    revert: async ({ url }) => (await getArchive(url)).revert(),
+    download: async ({ url, path, opts }) =>(await getArchive(url)).download(path, opts),
     createFileActivityStream: async ({ url, pattern }) => {
-        const archive = getArchive(url);
+        const archive = await getArchive(url);
         await archive._loadPromise;
         const stream = new ActivityStream(archive.createFileActivityStream(pattern));
         const id = ++streamIdx;
@@ -104,7 +104,7 @@ module.exports = ({ getArchive, createArchive, forkArchive }) => ({
         return { streamId: id };
     },
     createNetworkActivityStream: async ({ url }) => {
-        const archive = getArchive(url);
+        const archive = await getArchive(url);
         await archive._loadPromise;
         const stream = new ActivityStream(archive.createNetworkActivityStream());
         const id = ++streamIdx;
