@@ -1,4 +1,4 @@
-#!/home/sam/.nvm/versions/node/v9.9.0/bin/node
+#!/usr/bin/env node
 const path = require('path');
 const browser = require('./src/browser');
 const datApi = require('./src/api');
