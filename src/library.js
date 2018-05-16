@@ -33,16 +33,22 @@ class Library {
         const library = await this.listLibrary();
         if (library) {
             // library exists, open archives in it
-            library.forEach(async ({ dir }) => {
-                const archive = await DatArchive.load({
-                    localPath: dir,
-                    datOptions: {
-                        latest: true,
-                    }
-                });
-                const { host } = parseDatURL(archive.url);
-                this.archives.set(host, archive);
+            const loadLibrary = library.map(async ({ dir, url }) => {
+                try {
+                    const archive = await DatArchive.load({
+                        localPath: dir,
+                        datOptions: {
+                            latest: true,
+                        }
+                    });
+                    const { host } = parseDatURL(archive.url);
+                    this.archives.set(host, archive);
+                } catch (e) {
+                    // failed to load archive, remove from library
+                    await storage.removeItem(url);
+                }
             });
+            await Promise.all(loadLibrary);
         }
         // TODO: add other dats in folder
     }
