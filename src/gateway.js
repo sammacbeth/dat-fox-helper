@@ -4,7 +4,8 @@ const joinPaths = require('path').join;
 const pump = require('pump')
 const parseDatURL = require('parse-dat-url');
 const pda = require('pauls-dat-api');
-const DatArchive = require('node-dat-archive')
+const DatArchive = require('node-dat-archive');
+const parseRange = require('range-parser');
 
 class DatGateway {
     constructor(library) {
@@ -31,7 +32,7 @@ class DatGateway {
     async handleRequest(req, res) {
         // mimic beakerbrowser's dat protocol handling for the web.
         // Cribbed from https://github.com/beakerbrowser/beaker/blob/master/app/background-process/protocols/dat.js
-        // minor minor alterations
+        // with minor alterations
         const errorResponse = (code, message) => {
             res.statusCode = code;
             res.end(message);
@@ -121,12 +122,23 @@ class DatGateway {
                 return;
             }
         }
+        // handle range
+        res.setHeader('Accept-Ranges', 'bytes');
+        let range = req.headers.Range || req.headers.range;
+        if (range) range = parseRange(entry.size, range);
+        if (range && range.type === 'bytes') {
+            const sendRange = range[0];
+            res.statusCode = 206;
+            res.setHeader('Content-Range', `bytes ${sendRange.start}-${sendRange.end}/${entry.size}`);
+            res.setHeader('Content-Length', sendRange.end - sendRange.start + 1);
+        } else {
+            res.setHeader('Content-Length', entry.size);
+            res.statusCode = 200;
+        }
 
-        res.setHeader('Content-Length', entry.size);
         res.setHeader('Content-Type', mime.getType(entry.path));
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Cache-Control', 'public, max-age: 60');
-        res.statusCode = 200;
         if (req.method === 'HEAD') {
             res.end();
         }
