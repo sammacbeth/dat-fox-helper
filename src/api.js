@@ -74,6 +74,22 @@ module.exports = ({ getArchive, createArchive, forkArchive }) => ({
     fork: ({ url, opts }) => forkArchive(url, opts),
     // DatArchive class methods
     getInfo: async (message) => (await getArchive(message.url)).getInfo(message.opts),
+    configure: async ({ url, opts }) => (await getArchive(url)).configure(opts),
+    copy: async ({ url, path, dstPath, opts }) => {
+        const archive = await getArchive(url);
+        if ((await archive.stat(path)).isFile()) {
+            return archive.writeFile(dstPath, await archive.readFile(path, { encoding: 'binary'}));
+        }
+        await archive.mkdir(dstPath);
+        const files = await archive.readdir(path);
+        await Promise.all(files.map((file) => this.copy({
+            url,
+            path: `${path}/${file}`,
+            dstPath: `${dstPath}/${file}`,
+            opts,
+        })));
+        return
+    },
     stat: async (message) => (await getArchive(message.url))
         .stat(message.path, message.opts)
         .then(s => seralisableStat(s)),
@@ -91,6 +107,16 @@ module.exports = ({ getArchive, createArchive, forkArchive }) => ({
     mkdir: async ({ url, path }) => (await getArchive(url)).mkdir(path),
     unlink: async ({ url, path }) => (await getArchive(url)).unlink(path),
     rmdir: async ({ url, path, opts }) => (await getArchive(url)).rmdir(path, opts),
+    rename: async({ url, oldPath, newPath, opts }) => {
+        // const archive = await getArchive(url);
+        // const stat = await archive.stat(oldPath);
+        // await this.copy({ url, oldName: oldPath, newName: newPath, opts });
+        // if (stat.isDirectory) {
+        //     const contents = await archive.readdir(oldPath, { recursive: true })
+        //     await Promise.all(contents.map))
+        // }
+        throw 'not implemented yet';
+    },
     diff: async ({ url, opts }) =>(await getArchive(url)).diff(opts),
     commit: async ({ url }) => (await getArchive(url)).commit(),
     revert: async ({ url }) => (await getArchive(url)).revert(),
