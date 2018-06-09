@@ -13,7 +13,10 @@ const DAT_PRESERVED_FIELDS_ON_FORK = [
 ];
 
 function formatArchiveName(name) {
-    return name.replace(' ', '-').replace('/', '_').replace('\\', '_');
+    return name.replace(' ', '-')
+    .replace('/', '_')
+    .replace('\\', '_')
+    .replace(':', '_');
 }
 
 class Library {
