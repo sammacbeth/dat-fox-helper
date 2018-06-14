@@ -66,6 +66,17 @@ class ActivityStream {
 let streamIdx = 1;
 const activeStreams = new Map();
 
+// clean unclosed streams
+setInterval(() => {
+    const now = Date.now();
+    activeStreams.forEach((stream, id) => {
+        if (now - stream.lastPoll > 60000) {
+            stream.close();
+            activeStreams.delete(id);
+        }
+    });
+}, 60000)
+
 module.exports = ({ getArchive, createArchive, forkArchive }) => ({
     apiVersion: () => Promise.resolve(1),
     // DatArchive static methods
