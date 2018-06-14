@@ -22,6 +22,7 @@ function formatArchiveName(name) {
 class Library {
     constructor(libraryDir) {
         this.libraryDir = libraryDir;
+        this.cacheDir = `${this.libraryDir}/cache`;
         // open and active archives
         this.archives = new Map();
         this.archiveUsage = new Map();
@@ -90,10 +91,37 @@ class Library {
         }));
     }
 
+    async ensureCacheDir() {
+        const exists = await new Promise(resolve => !fs.exists(this.cacheDir, resolve));
+        if (!exists) {
+            await new Promise(resolve => !fs.mkdir(this.cacheDir, resolve));
+        }
+    }
+
+    async createTempArchive(address) {
+        await this.ensureCacheDir();
+        const archiveDir = `${this.cacheDir}/${address}`;
+        const exists = await new Promise(resolve => !fs.exists(archiveDir, resolve));
+        if (exists) {
+            return DatArchive.load({
+                localPath: archiveDir,
+                datOptions: {
+                    latest: true,
+                },
+            });
+        }
+        return new DatArchive(address, {
+            localPath: archiveDir,
+            datOptions: {
+                latest: true,
+            },
+        });
+    }
+
     async getArchive(url) {
         const host = await DatArchive.resolveName(url);
         if (!this.archives.has(host)) {
-            this.archives.set(host, new DatArchive(url));
+            this.archives.set(host, await this.createTempArchive(host));
         }
         this.archiveUsage.set(host, Date.now());
         return this.archives.get(host);
