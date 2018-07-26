@@ -1,6 +1,6 @@
 {
   "name": "dat-fox-helper",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Bridge to Dat for a browser extension",
   "main": "index.js",
   "scripts": {
@@ -11,7 +11,7 @@
   "dependencies": {
     "node-dat-archive": "git+https://git@github.com/sammacbeth/node-dat-archive",
     "node-persist": "^3.0.0",
-    "pauls-dat-api": "7.2.1",
+    "pauls-dat-api": "8.0.1",
     "mime": "2.3.1",
     "pump": "3.0.0"
   },

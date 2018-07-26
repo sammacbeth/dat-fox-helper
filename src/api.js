@@ -75,7 +75,7 @@ setInterval(() => {
             activeStreams.delete(id);
         }
     });
-}, 60000)
+}, 60000);
 
 module.exports = ({ getArchive, createArchive, forkArchive }) => ({
     apiVersion: () => Promise.resolve(1),
