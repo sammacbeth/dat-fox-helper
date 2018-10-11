@@ -38,7 +38,7 @@ class DatGateway {
             res.end(message);
         }
 
-        const { host, path, version, search } = parseDatURL(req.url);
+        const { host, path, version, search, query } = parseDatURL(req.url, true);
         const address = await DatArchive.resolveName(host);
 
         if (!address) {
@@ -66,7 +66,7 @@ class DatGateway {
             // abort if we've already found it
             if (entry) return
             // apply the web_root config
-            if (manifest && manifest.web_root && !urlp.query.disable_web_root) {
+            if (manifest && manifest.web_root && !(query && query.disable_web_root)) {
                 if (path) {
                     path = joinPaths(manifest.web_root, path)
                 } else {
