@@ -38,7 +38,8 @@ class DatGateway {
             res.end(message);
         }
 
-        const { host, path, version, search, query } = parseDatURL(req.url, true);
+        const url = req.url.startsWith('/') ? req.url.substring(1) : req.url;
+        const { host, path, version, search, query } = parseDatURL(url, true);
         const address = await DatArchive.resolveName(host);
 
         if (!address) {
