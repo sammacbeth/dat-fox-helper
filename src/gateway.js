@@ -85,7 +85,8 @@ class DatGateway {
             await tryStat(filePath)
             if (entry && entry.isDirectory()) {
                 res.statusCode = 303;
-                res.setHeader('Location', `${path}/${search}`);
+                res.setHeader('Location', `${req.url}/${search ? search : ''}`);
+                res.end();
                 return;
             }
         }
