@@ -80,6 +80,10 @@ setInterval(() => {
 module.exports = ({ getArchive, createArchive, forkArchive }) => ({
     apiVersion: () => Promise.resolve(1),
     // DatArchive static methods
+    load: async ({ url }) => {
+        await (await getArchive(url))._loadPromise;
+        return url;
+    },
     resolveName: (message) => DatArchive.resolveName(message.name),
     create: ({ opts }) => createArchive(opts),
     fork: ({ url, opts }) => forkArchive(url, opts),
