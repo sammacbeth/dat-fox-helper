@@ -39,7 +39,7 @@ echo "Installing Firefox manifest to $MANIFEST_PATH"
 mkdir -p "$MANIFEST_PATH"
 curl -L -o "$MANIFEST_PATH/dathelper.json" $MANIFEST_URL
 # set path in manifest
-path1esc=$(echo "/path/to/dat-fox-helper/datfox-helper.js" | sed 's_/_\\/_g')
+path1esc=$(echo "/path/to/dat-fox-helper/dat-fox-helper.js" | sed 's_/_\\/_g')
 path2esc=$(echo "$BINDIR/dat-fox-helper" | sed 's_/_\\/_g')
 if [[ `uname` == "Darwin" ]]; then
     sed -i "" -e "s/$path1esc/$path2esc/" "$MANIFEST_PATH/dathelper.json"

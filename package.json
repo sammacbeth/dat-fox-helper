@@ -4,7 +4,7 @@
   "description": "Bridge to Dat for a browser extension",
   "main": "index.js",
   "scripts": {
-    "package": "pkg datfox-helper.js -c package.json --out-path dist/"
+    "package": "pkg dat-fox-helper.js -c package.json --out-path dist/"
   },
   "author": "Sam Macbeth",
   "license": "MIT",

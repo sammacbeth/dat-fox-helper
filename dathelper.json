@@ -1,7 +1,7 @@
 {
     "name": "dathelper",
     "description": "Dat helper daemon",
-    "path": "/path/to/dat-fox-helper/datfox-helper.js",
+    "path": "/path/to/dat-fox-helper/dat-fox-helper.js",
     "type": "stdio",
     "allowed_extensions": [
       "{e992d888-6346-4e09-98b5-8c61307970e6}",

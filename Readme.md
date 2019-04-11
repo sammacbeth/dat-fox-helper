@@ -76,9 +76,9 @@ cd dat-fox-helper
 npm install
 ```
 
-Make sure the first line of `datfox-helper.js` points to your `node` binary. You can check this with `which node` in a terminal:
+Make sure the first line of `dat-fox-helper.js` points to your `node` binary. You can check this with `which node` in a terminal:
 ```sh
 #!/path/to/node
 ```
 
-Now complete the steps from the previous section, but instead of using the binary, set the `"path"` to point to `datfox-helper.js`.
+Now complete the steps from the "Manual install" section, but instead of using the binary, set the `"path"` to point to `dat-fox-helper.js`.
