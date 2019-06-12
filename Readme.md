@@ -53,7 +53,7 @@ Now we need to make Firefox aware of the binary, using a [Native Manifest](https
 Update the `"path"` value to match the absolute path to the dat-fox-helper binary. Save this file to:
  * Linux: `~/.mozilla/native-messaging-hosts/dathelper.json`
  * Mac: `~/Library/Application Support/Mozilla/NativeMessagingHosts/dathelper.json`
- * Windows: The same directory as the binary.
+ * Windows: The same directory as the binary. Take care to double the backslashes in the path to escape them.
  
 ### Windows only: Add registry key
 
