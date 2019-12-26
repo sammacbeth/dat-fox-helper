@@ -4,8 +4,8 @@ const joinPaths = require('path').join;
 const pump = require('pump')
 const parseDatURL = require('parse-dat-url');
 const pda = require('pauls-dat-api');
-const DatArchive = require('node-dat-archive');
 const parseRange = require('range-parser');
+const dns = require('./dns');
 
 class DatGateway {
     constructor(library) {
@@ -40,7 +40,7 @@ class DatGateway {
 
         const url = req.url.startsWith('/') ? req.url.substring(1) : req.url;
         const { host, path, version, search, query } = parseDatURL(url, true);
-        const address = await DatArchive.resolveName(host);
+        const address = await dns.resolveName(host);
 
         if (!address) {
             errorResponse(404, 'Archive Not Found');

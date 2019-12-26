@@ -1,10 +1,13 @@
+const apiFactory = require('@sammacbeth/dat-api-v1').default;
+const { create, fork, default: createDatArchive } = require('@sammacbeth/dat-archive');
 const fs = require('fs');
 const process = require('process');
 const path = require('path');
-const DatArchive = require('node-dat-archive')
-const parseDatURL = require('parse-dat-url')
 const storage = require('node-persist');
-const pda = require('pauls-dat-api');
+const rimraf = require('rimraf');
+const raf = require('random-access-file');
+const dns = require('./dns');
+const migrate = require('./migrate');
 
 const DAT_PRESERVED_FIELDS_ON_FORK = [
     'web_root',
@@ -22,10 +25,18 @@ function formatArchiveName(name) {
 class Library {
     constructor(libraryDir) {
         this.libraryDir = libraryDir;
-        this.cacheDir = `${this.libraryDir}/cache`;
+        this.datDir = `${this.libraryDir}/dat1`;
         // open and active archives
         this.archives = new Map();
         this.archiveUsage = new Map();
+        this.node = apiFactory({
+            persistantStorageFactory: (key) => Promise.resolve((f) => {
+                return raf(`${this.datDir}/${key}/${f.replace('/', '.')}`);
+            }),
+            persistantStorageDeleter: (key) => new Promise((resolve) => {
+                rimraf(`${this.datDir}/${key}`, resolve);
+            }),
+        }, { persist: true, autoSwarm: true })
     }
 
     async init() {
@@ -33,10 +44,12 @@ class Library {
         if (!fs.existsSync(this.libraryDir)) {
             fs.mkdirSync(this.libraryDir);
         }
+        await migrate(this.libraryDir);
         this.ready = await storage.init({ dir: `${this.libraryDir}/.metadata` });
         const library = await this.listLibrary();
         if (library) {
             // library exists, open archives in it
+            /*
             const loadLibrary = library.map(async ({ dir, url }) => {
                 try {
                     const archive = await DatArchive.load({
@@ -53,6 +66,7 @@ class Library {
                 }
             });
             await Promise.all(loadLibrary);
+            */
         }
         // TODO: add other dats in folder
     }
@@ -92,34 +106,38 @@ class Library {
     }
 
     async ensureCacheDir() {
-        const exists = await new Promise(resolve => !fs.exists(this.cacheDir, resolve));
+        const exists = await new Promise(resolve => !fs.exists(this.datDir, resolve));
         if (!exists) {
-            await new Promise(resolve => !fs.mkdir(this.cacheDir, resolve));
+            await new Promise(resolve => !fs.mkdir(this.datDir, resolve));
         }
     }
 
     async createTempArchive(address) {
         await this.ensureCacheDir();
-        const archiveDir = `${this.cacheDir}/${address}`;
-        const exists = await new Promise(resolve => !fs.exists(archiveDir, resolve));
-        if (exists) {
-            return DatArchive.load({
-                localPath: archiveDir,
-                datOptions: {
-                    latest: true,
-                },
-            });
-        }
-        return new DatArchive(address, {
-            localPath: archiveDir,
-            datOptions: {
-                latest: true,
-            },
-        });
+        const dat = await this.node.getDat(address, { persist: true, autoSwarm: true });
+        await dat.ready;
+        const archive = createDatArchive(dat.drive);
+        return archive;
+        // const archiveDir = `${this.datDir}/${address}`;
+        // const exists = await new Promise(resolve => !fs.exists(archiveDir, resolve));
+        // if (exists) {
+        //     return DatArchive.load({
+        //         localPath: archiveDir,
+        //         datOptions: {
+        //             latest: true,
+        //         },
+        //     });
+        // }
+        // return new DatArchive(address, {
+        //     localPath: archiveDir,
+        //     datOptions: {
+        //         latest: true,
+        //     },
+        // });
     }
 
     async getArchive(url) {
-        const host = await DatArchive.resolveName(url);
+        const host = await dns.resolveName(url);
         if (!this.archives.has(host)) {
             this.archives.set(host, await this.createTempArchive(host));
         }
@@ -139,6 +157,10 @@ class Library {
             }
             dir = dirN(i);
         }
+        const { host } = parseDatURL(archive.url);
+        this.archives.set(host, archive);
+
+        const archive = await create(this.node, { persist: true }, opts);
 
         const archive = await DatArchive.create({
             localPath: dir,
@@ -149,9 +171,8 @@ class Library {
                 latest: true,
             },
         });
-        const { host } = parseDatURL(archive.url);
+        
         storage.setItem(archive.url, { dir, url: archive.url, owner: true, description });
-        this.archives.set(host, archive);
         return archive.url;
     }
 

@@ -1,4 +1,3 @@
-const DatArchive = require('node-dat-archive')
 
 function seralisableStat(stat) {
     return {

@@ -9,11 +9,17 @@
   "author": "Sam Macbeth",
   "license": "MIT",
   "dependencies": {
+    "@sammacbeth/dat-api-v1": "^0.3.0",
+    "@sammacbeth/dat-archive": "0.0.12",
+    "@sammacbeth/dat-protocol-handler": "0.0.11",
+    "dat-dns": "^4.1.2",
+    "fs-extra": "^8.1.0",
+    "mime": "2.3.1",
     "node-dat-archive": "git+https://git@github.com/sammacbeth/node-dat-archive",
     "node-persist": "^3.0.0",
     "pauls-dat-api": "8.0.1",
-    "mime": "2.3.1",
-    "pump": "3.0.0"
+    "pump": "3.0.0",
+    "rimraf": "^3.0.0"
   },
   "devDependencies": {
     "pkg": "^4.3.1"
