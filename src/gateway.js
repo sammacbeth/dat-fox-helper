@@ -5,6 +5,7 @@ const pump = require('pump')
 const parseDatURL = require('parse-dat-url');
 const pda = require('pauls-dat-api');
 const parseRange = require('range-parser');
+const datProtocol = require('@sammacbeth/dat-protocol-handler');
 const dns = require('./dns');
 
 class DatGateway {
@@ -18,6 +19,7 @@ class DatGateway {
                 res.end(e.toString());
             }
         });
+        // this.handler = datProtocol.default(library.node, dns.resolveName, { persist: true, autoSwarm: true });
     }
 
     listen (port) {
@@ -38,113 +40,80 @@ class DatGateway {
             res.end(message);
         }
 
-        const url = req.url.startsWith('/') ? req.url.substring(1) : req.url;
-        const { host, path, version, search, query } = parseDatURL(url, true);
-        const address = await dns.resolveName(host);
-
-        if (!address) {
-            errorResponse(404, 'Archive Not Found');
-            return;
-        }
         if (['GET', 'HEAD'].indexOf(req.method) === -1) {
             errorResponse(405, 'Method Not Supported');
             return;
         }
-        const archive = await this.library.getArchive(`dat://${address}`);
-        const filePath = decodeURIComponent(path).split('?')[0] || '/';
-        const isFolder = filePath.endsWith('/');
 
-        await archive._loadPromise;
-        const manifest = await pda.readManifest(archive._archive).catch(_ => {});
+        const url = req.url.startsWith('/') ? req.url.substring(1) : req.url;
+        const { host, pathname, version } = parseDatURL(url);
 
-        // CSP in manifest
+        try {
+            const address = await dns.resolveName(host);
+            const dat = await this.library.node.getDat(address, { persist: true, autoSwarm: true });
+            await dat.ready;
+            const result = await datProtocol.resolvePath(dat.drive, pathname, version);
+
+            if (result.directory === true) {
+                res.statusCode = 200;
+                res.write(`Directory ${result.path}`);
+                res.end();
+                return
+            }
+            const size = new Promise((resolve) => {
+                result.drive.stat(result.path, (err, stat) => {
+                    resolve(stat.size);
+                });
+            })
+
+            // handle range
+            /*
+            res.setHeader('Accept-Ranges', 'bytes');
+            let range = req.headers.Range || req.headers.range;
+            let start = 0;
+            let end = 0;
+            if (range) range = parseRange(size, range);
+            if (range && range.type === 'bytes') {
+                const sendRange = range[0];
+                start = sendRange.start;
+                end = sendRange.end;
+                res.statusCode = 206;
+                res.setHeader('Content-Range', `bytes ${sendRange.start}-${sendRange.end}/${size}`);
+                res.setHeader('Content-Length', sendRange.end - sendRange.start + 1);
+            } else {
+                res.setHeader('Content-Length', size);
+                res.statusCode = 200;
+            }
+            */
+
+            res.setHeader('Content-Type', mime.getType(result.path));
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Cache-Control', 'public, max-age: 60');
+            if (req.method === 'HEAD') {
+                res.end();
+            }
+            console.error('xxx', result.path);
+            pump(result.drive.createReadStream(result.path), res);
+        } catch (e) {
+            if (e instanceof datProtocol.NotFoundError) {
+                errorResponse(404, 'Archive Not Found');
+                return;
+            }
+            if (e instanceof datProtocol.NetworkTimeoutError) {
+                errorResponse(500, 'Timed out loading dat');
+                return;
+            }
+            errorResponse(501, e.toString());
+        }
+       
+        // TODO: CSP in manifest
+        /*
         if (manifest && manifest.content_security_policy && typeof manifest.content_security_policy === 'string') {
             res.setHeader('Content-Security-Policy', manifest.content_security_policy);
         }
+        */
 
-        let entry = null;
-        const tryStat = async (path) => {
-            // abort if we've already found it
-            if (entry) return
-            // apply the web_root config
-            if (manifest && manifest.web_root && !(query && query.disable_web_root)) {
-                if (path) {
-                    path = joinPaths(manifest.web_root, path)
-                } else {
-                    path = manifest.web_root
-                }
-            }
-            // attempt lookup
-            try {
-                entry = await archive.stat(path)
-                entry.path = path
-            } catch (e) {}
-        }
-
-        if (!isFolder) {
-            await tryStat(filePath)
-            if (entry && entry.isDirectory()) {
-                res.statusCode = 303;
-                res.setHeader('Location', `${req.url}/${search ? search : ''}`);
-                res.end();
-                return;
-            }
-        }
-
-        if (isFolder) {
-            await tryStat(filePath + 'index.html')
-            await tryStat(filePath + 'index.md')
-            await tryStat(filePath)
-        } else {
-            await tryStat(filePath)
-            await tryStat(filePath + '.html') // fallback to .html
-        }
-
-        // handle folder
-        if (entry && entry.isDirectory()) {
-            if (req.method === 'HEAD') {
-                res.statusCode = 204;
-                res.end('');
-            } else {
-                res.statusCode = 200;
-                res.write(`Directory ${entry.path}`);
-                res.end();
-            }
-            return;
-        }
-
-        if (!entry) {
-            // check for a fallback page
-            if (manifest && manifest.fallback_page) {
-                await tryStat(manifest.fallback_page)
-            }
-
-            if (!entry) {
-                errorResponse(404, 'Not Found');
-                return;
-            }
-        }
-        // handle range
-        res.setHeader('Accept-Ranges', 'bytes');
-        let range = req.headers.Range || req.headers.range;
-        if (range) range = parseRange(entry.size, range);
-        if (range && range.type === 'bytes') {
-            const sendRange = range[0];
-            res.statusCode = 206;
-            res.setHeader('Content-Range', `bytes ${sendRange.start}-${sendRange.end}/${entry.size}`);
-            res.setHeader('Content-Length', sendRange.end - sendRange.start + 1);
-        } else {
-            res.setHeader('Content-Length', entry.size);
-            res.statusCode = 200;
-        }
-
-        res.setHeader('Content-Type', mime.getType(entry.path));
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Cache-Control', 'public, max-age: 60');
-        if (req.method === 'HEAD') {
-            res.end();
-        }
-        pump(archive._archive.createReadStream(entry.path), res);
+        
     }
 }
 
