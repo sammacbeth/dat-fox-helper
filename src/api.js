@@ -1,3 +1,4 @@
+const dns = require('./dns');
 
 function seralisableStat(stat) {
     return {
@@ -83,7 +84,7 @@ module.exports = ({ getArchive, createArchive, forkArchive }) => ({
         await (await getArchive(url))._loadPromise;
         return url;
     },
-    resolveName: (message) => DatArchive.resolveName(message.name),
+    resolveName: (message) => dns.resolveName(message.name),
     create: ({ opts }) => createArchive(opts),
     fork: ({ url, opts }) => forkArchive(url, opts),
     // DatArchive class methods

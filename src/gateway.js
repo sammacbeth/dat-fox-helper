@@ -50,7 +50,11 @@ class DatGateway {
 
         try {
             const address = await dns.resolveName(host);
-            const dat = await this.library.node.getDat(address, { persist: true, autoSwarm: true });
+            const dat = await this.library.node.getDat(address, {
+                persist: true,
+                autoSwarm: true,
+                sparse: true
+            });
             await dat.ready;
             const result = await datProtocol.resolvePath(dat.drive, pathname, version);
 
@@ -92,7 +96,6 @@ class DatGateway {
             if (req.method === 'HEAD') {
                 res.end();
             }
-            console.error('xxx', result.path);
             pump(result.drive.createReadStream(result.path), res);
         } catch (e) {
             if (e instanceof datProtocol.NotFoundError) {
