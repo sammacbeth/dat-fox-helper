@@ -44,7 +44,7 @@ class Library {
         if (!fs.existsSync(this.libraryDir)) {
             fs.mkdirSync(this.libraryDir);
         }
-        await migrate(this.libraryDir);
+        await migrate(this.libraryDir, this.node);
         this.ready = await storage.init({ dir: `${this.libraryDir}/.metadata` });
         const library = await this.listLibrary();
         if (library) {

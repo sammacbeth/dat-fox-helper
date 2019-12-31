@@ -45,7 +45,7 @@ class DatGateway {
             return;
         }
 
-        const url = req.url.startsWith('/') ? req.url.substring(1) : req.url;
+        const url = req.url;
         const { host, pathname, version } = parseDatURL(url);
 
         try {
