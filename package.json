@@ -22,6 +22,6 @@
     "rimraf": "^3.0.0"
   },
   "devDependencies": {
-    "pkg": "^4.3.1"
+    "pkg": "^4.4.2"
   }
 }
