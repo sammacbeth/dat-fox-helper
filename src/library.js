@@ -1,10 +1,13 @@
+const apiFactory = require('@sammacbeth/dat-api-v1').default;
+const { create, fork, default: createDatArchive } = require('@sammacbeth/dat-archive');
 const fs = require('fs');
 const process = require('process');
 const path = require('path');
-const DatArchive = require('node-dat-archive')
-const parseDatURL = require('parse-dat-url')
 const storage = require('node-persist');
-const pda = require('pauls-dat-api');
+const rimraf = require('rimraf');
+const raf = require('random-access-file');
+const dns = require('./dns');
+const migrate = require('./migrate');
 
 const DAT_PRESERVED_FIELDS_ON_FORK = [
     'web_root',
@@ -19,13 +22,27 @@ function formatArchiveName(name) {
     .replace(':', '_');
 }
 
+const datOpts = {
+    persist: true,
+    autoSwarm: true,
+    sparse: true
+};
+
 class Library {
     constructor(libraryDir) {
         this.libraryDir = libraryDir;
-        this.cacheDir = `${this.libraryDir}/cache`;
+        this.datDir = `${this.libraryDir}/dat1`;
         // open and active archives
         this.archives = new Map();
         this.archiveUsage = new Map();
+        this.node = apiFactory({
+            persistantStorageFactory: (key) => Promise.resolve((f) => {
+                return raf(`${this.datDir}/${key}/${f.replace('/', '.')}`);
+            }),
+            persistantStorageDeleter: (key) => new Promise((resolve) => {
+                rimraf(`${this.datDir}/${key}`, resolve);
+            }),
+        }, datOpts)
     }
 
     async init() {
@@ -33,19 +50,17 @@ class Library {
         if (!fs.existsSync(this.libraryDir)) {
             fs.mkdirSync(this.libraryDir);
         }
+        await migrate(this.libraryDir, this.node);
         this.ready = await storage.init({ dir: `${this.libraryDir}/.metadata` });
         const library = await this.listLibrary();
         if (library) {
             // library exists, open archives in it
             const loadLibrary = library.map(async ({ dir, url }) => {
                 try {
-                    const archive = await DatArchive.load({
-                        localPath: dir,
-                        datOptions: {
-                            latest: true,
-                        }
-                    });
-                    const { host } = parseDatURL(archive.url);
+                    const address = await dns.resolveName(url);
+                    const dat = await this.node.getDat(address, datOpts);
+                    await dat.ready;
+                    const archive = createDatArchive(dat.drive);
                     this.archives.set(host, archive);
                 } catch (e) {
                     // failed to load archive, remove from library
@@ -76,11 +91,12 @@ class Library {
     }
 
     async close(url) {
-        const { host } = parseDatURL(url);
-        const archive = await this.getArchive(url);
+        const host = await dns.resolveName(url);
+        if (this.node.dats.has(host)) {
+            this.node.dats.get(host).close();
+        }
         this.archives.delete(host);
         this.archiveUsage.delete(host);
-        await archive._close();
     }
 
     getOpenArchives() {
@@ -92,34 +108,22 @@ class Library {
     }
 
     async ensureCacheDir() {
-        const exists = await new Promise(resolve => !fs.exists(this.cacheDir, resolve));
+        const exists = await new Promise(resolve => !fs.exists(this.datDir, resolve));
         if (!exists) {
-            await new Promise(resolve => !fs.mkdir(this.cacheDir, resolve));
+            await new Promise(resolve => !fs.mkdir(this.datDir, resolve));
         }
     }
 
     async createTempArchive(address) {
         await this.ensureCacheDir();
-        const archiveDir = `${this.cacheDir}/${address}`;
-        const exists = await new Promise(resolve => !fs.exists(archiveDir, resolve));
-        if (exists) {
-            return DatArchive.load({
-                localPath: archiveDir,
-                datOptions: {
-                    latest: true,
-                },
-            });
-        }
-        return new DatArchive(address, {
-            localPath: archiveDir,
-            datOptions: {
-                latest: true,
-            },
-        });
+        const dat = await this.node.getDat(address, datOpts);
+        await dat.ready;
+        const archive = createDatArchive(dat.drive);
+        return archive;
     }
 
     async getArchive(url) {
-        const host = await DatArchive.resolveName(url);
+        const host = await dns.resolveName(url);
         if (!this.archives.has(host)) {
             this.archives.set(host, await this.createTempArchive(host));
         }
@@ -128,63 +132,18 @@ class Library {
     }
 
     async createArchive(opts) {
-        const { title, description, type } = opts;
-        let dir = path.join(this.libraryDir, formatArchiveName(title));
-        // prevent duplicate directory
-        if (fs.existsSync(dir)) {
-            let i = 1;
-            const dirN = (n) => `${dir}_${n}`;
-            while (fs.existsSync(dirN(i))) {
-                i += 1;
-            }
-            dir = dirN(i);
-        }
-
-        const archive = await DatArchive.create({
-            localPath: dir,
-            title,
-            description,
-            type,
-            datOptions: {
-                latest: true,
-            },
-        });
-        const { host } = parseDatURL(archive.url);
-        storage.setItem(archive.url, { dir, url: archive.url, owner: true, description });
+        const archive = await create(this.node, datOpts, opts);
+        const { host } = await dns.resolveName(archive.url);
         this.archives.set(host, archive);
+        
+        storage.setItem(archive.url, { dir: `${this.libraryDir}/dat1/${host}/`, url: archive.url, owner: true, description: opts.description });
         return archive.url;
     }
 
     async forkArchive(srcArchiveUrl, opts) {
-        // based on beaker implementation at: https://github.com/beakerbrowser/beaker/blob/master/app/background-process/networks/dat/library.js
-
-        // get source archive and download the contents
-        const { host } = parseDatURL(srcArchiveUrl);
-        const srcArchive = await this.getArchive(host);
-        await srcArchive.download('/', { timeout: 60000 });
-
-        // get manifest of the source archive
-        const srcManifest = await pda.readManifest(srcArchive._archive).catch(_ => {});
-        // create manifest for new archive
-        const dstManifest = {
-            title: (opts.title) ? opts.title : srcManifest.title,
-            description: (opts.description) ? opts.description : srcManifest.description,
-            type: (opts.type) ? opts.type : opts.type,
-        }
-        DAT_PRESERVED_FIELDS_ON_FORK.forEach(field => {
-            if (srcManifest[field]) {
-                dstManifest[field] = srcManifest[field]
-            }
-        });
-        const dstArchiveUrl = await this.createArchive(dstManifest);
-        const dstArchive = await this.getArchive(dstArchiveUrl);
-        await pda.updateManifest(dstArchive._archive, dstManifest);
-        await pda.exportArchiveToArchive({
-            srcArchive: srcArchive._archive,
-            dstArchive: dstArchive._archive,
-            skipUndownloadedFiles: true,
-            ignore: ['/.dat', '/.git', '/dat.json'],
-        });
+        const srcAddress = await dns.resolveName(srcArchiveUrl);
+        const srcDat = await this.node.getDat(srcAddress, datOpts);
+        const dstArchive = await fork(this.node, srcDat.drive, datOpts, opts);
         return dstArchive.url;
     }
 }
