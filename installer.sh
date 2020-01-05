@@ -3,7 +3,7 @@
 { # this ensures the entire script is downloaded #
 
 REPO_URL="https://github.com/sammacbeth/dat-fox-helper/releases/download"
-TAG="v0.1.0"
+TAG="v0.2.0"
 MANIFEST_URL="https://raw.githubusercontent.com/sammacbeth/dat-fox-helper/$TAG/dathelper.json"
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
