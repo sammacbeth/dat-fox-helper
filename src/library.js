@@ -1,8 +1,6 @@
 const apiFactory = require('@sammacbeth/dat-api-v1').default;
 const { create, fork, default: createDatArchive } = require('@sammacbeth/dat-archive');
-const fs = require('fs');
-const process = require('process');
-const path = require('path');
+const fs = require('fs-extra');
 const storage = require('node-persist');
 const rimraf = require('rimraf');
 const raf = require('random-access-file');
@@ -54,19 +52,39 @@ class Library {
         this.ready = await storage.init({ dir: `${this.libraryDir}/.metadata` });
         const library = await this.listLibrary();
         if (library) {
+            if (library.length === 0) {
+                // check for owned
+                const addresses = await fs.readdir(this.datDir);
+                const checkOwned = addresses.map(async (address) => {
+                    try {
+                        const dat = await this.node.getDat(address, datOpts);
+                        await dat.ready;
+                        if (dat.drive.writable) {
+                            const archive = createDatArchive(dat.drive);
+                            this.updateLibraryEntry(archive);
+                            this.archives.set(address, archive);
+                        } else {
+                            dat.close();
+                        }
+                    } catch (e) {
+                    }
+                });
+                await Promise.all(checkOwned);
+            }
             // library exists, open archives in it
-            const loadLibrary = library.map(async ({ dir, url }) => {
+            const loadLibrary = library.map(async ({ url }) => {
                 try {
                     const address = await dns.resolveName(url);
                     const dat = await this.node.getDat(address, datOpts);
                     await dat.ready;
                     const archive = createDatArchive(dat.drive);
-                    this.archives.set(host, archive);
+                    this.archives.set(address, archive);
                 } catch (e) {
                     // failed to load archive, remove from library
                     await storage.removeItem(url);
                 }
             });
+            
             await Promise.all(loadLibrary);
         }
         // TODO: add other dats in folder
@@ -136,7 +154,7 @@ class Library {
         const { host } = await dns.resolveName(archive.url);
         this.archives.set(host, archive);
         
-        storage.setItem(archive.url, { dir: `${this.libraryDir}/dat1/${host}/`, url: archive.url, owner: true, description: opts.description });
+        this.updateLibraryEntry(archive);
         return archive.url;
     }
 
@@ -144,7 +162,21 @@ class Library {
         const srcAddress = await dns.resolveName(srcArchiveUrl);
         const srcDat = await this.node.getDat(srcAddress, datOpts);
         const dstArchive = await fork(this.node, srcDat.drive, datOpts, opts);
+        this.updateLibraryEntry(dstArchive);
         return dstArchive.url;
+    }
+
+    updateLibraryEntry(archive) {
+        archive.getInfo().then((info) => {
+            const { key, url, title, description, isOwner } = info;
+            storage.setItem(archive.url, {
+                dir: `${this.libraryDir}/dat1/${key}/`,
+                url,
+                owner: isOwner,
+                title,
+                description,
+            });
+        });
     }
 }
 
