@@ -1,4 +1,4 @@
-const apiFactory = require('@sammacbeth/dat-api-v1').default;
+const apiFactory = require('@sammacbeth/dat2-api').default;
 const { create, fork, default: createDatArchive } = require('@sammacbeth/dat-archive');
 const fs = require('fs-extra');
 const storage = require('node-persist');
@@ -29,7 +29,7 @@ const datOpts = {
 class Library {
     constructor(libraryDir) {
         this.libraryDir = libraryDir;
-        this.datDir = `${this.libraryDir}/dat1`;
+        this.datDir = `${this.libraryDir}/dat2`;
         // open and active archives
         this.archives = new Map();
         this.archiveUsage = new Map();
